@@ -14,16 +14,16 @@ use App\Models\Exam;
 use Exception;
 use Smalot\PdfParser\Parser as PdfParser;
 use PhpOffice\PhpWord\IOFactory;
-use Throwable; // Import Throwable for catching errors in handle
+use Throwable;
 
 class ProcessExamFile implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected string $filePath; // Path relative to storage/app
+    protected string $filePath;
     protected string $originalName;
     protected string $fileExtension;
-    protected ?string $imagePublicPath; // Path relative to public storage (for DB)
+    protected ?string $imagePublicPath;
 
     /**
      * Create a new job instance.
@@ -39,11 +39,11 @@ class ProcessExamFile implements ShouldQueue
         $this->filePath = $filePath;
         $this->originalName = $originalName;
         $this->fileExtension = $fileExtension;
-        $this->imagePublicPath = $imagePublicPath; // Store the public path for DB saving
+        $this->imagePublicPath = $imagePublicPath;
     }
 
     /**
-     * Execute the job.
+     * Execute job.
      *
      * @return void
      */
@@ -52,22 +52,12 @@ class ProcessExamFile implements ShouldQueue
         Log::info("Processing job for file: {$this->originalName} ({$this->filePath})");
 
         $extractedText = null;
-        $fullStoragePath = storage_path('app/' . $this->filePath); // Get absolute path for processing
+        $fullStoragePath = storage_path('app/' . $this->filePath); 
 
         try {
-            // 1. Text Extraction (Moved from Controller)
+            // 1. Text Extraction 
             if (in_array($this->fileExtension, ['jpg', 'jpeg', 'png'])) {
-                // --- OCR Placeholder ---
-                // Image file is already stored. Now perform OCR if needed.
-                // $extractedText = $this->performOcr($fullStoragePath);
                 Log::warning("OCR processing needed for image {$this->originalName} but is not implemented.");
-                // If DeepSeek *can* handle image URLs/content directly, you'd pass
-                // $this->imagePublicPath or the file content here instead of text.
-                // For now, we proceed assuming text is needed but unavailable for images.
-                // Consider failing the job or storing with minimal data if OCR isn't done.
-                 // $fail('OCR is required for image processing and is not implemented.'); // Option to fail job
-                 // return; // Or just stop processing this job
-
             } elseif ($this->fileExtension === 'pdf') {
                 if (!file_exists($fullStoragePath)) {
                      throw new Exception("PDF file not found at path: " . $fullStoragePath);
@@ -86,13 +76,11 @@ class ProcessExamFile implements ShouldQueue
                  $text = '';
                  foreach ($phpWord->getSections() as $section) {
                      foreach ($section->getElements() as $element) {
-                         // Check element type for better text extraction
                         if ($element instanceof \PhpOffice\PhpWord\Element\TextRun || $element instanceof \PhpOffice\PhpWord\Element\Text) {
                             $text .= $element->getText() . ' ';
                         } elseif ($element instanceof \PhpOffice\PhpWord\Element\ListItemRun) {
-                            $text .= $element->getText() . ' '; // Handle list items
+                            $text .= $element->getText() . ' '; 
                         } elseif ($element instanceof \PhpOffice\PhpWord\Element\Table) {
-                             // Basic table text extraction
                              foreach ($element->getRows() as $row) {
                                  foreach ($row->getCells() as $cell) {
                                      foreach ($cell->getElements() as $cellElement) {
@@ -103,7 +91,6 @@ class ProcessExamFile implements ShouldQueue
                                  }
                              }
                          }
-                         // Add more element types as needed
                      }
                  }
                  $extractedText = trim($text);
@@ -111,38 +98,30 @@ class ProcessExamFile implements ShouldQueue
 
             } else {
                 Log::error("Unsupported file type encountered in job: {$this->fileExtension}");
-                // Optionally delete the file if it shouldn't have reached the job
-                // Storage::delete($this->filePath);
-                return; // Stop processing
+                return; 
             }
 
-            // Check if text extraction is needed but failed (e.g., for non-image types)
              if (empty($extractedText) && !$this->imagePublicPath) {
                  Log::error("Could not extract text from file: {$this->originalName}");
-                 // Optionally delete the file
-                 // Storage::delete($this->filePath);
-                 return; // Stop processing
+                 // delete file(optimize storage)
+                 Storage::delete($this->filePath);
+                 return;
              }
-
-
-            // 2. Call DeepSeek AI for Parsing (Moved from Controller)
             $apiKey = env('DEEPSEEK_API_KEY');
             if (!$apiKey) {
                 Log::error('DeepSeek API key is not configured. Job failed for: ' . $this->originalName);
-                $this->fail('DeepSeek API key is not configured.'); // Fail the job
+                $this->fail('DeepSeek API key is not configured.');
                 return;
             }
-
-            // Construct the prompt - use extracted text or indicate image path
             $contentForPrompt = $extractedText ?? 'N/A - Image file provided. Public path: ' . ($this->imagePublicPath ?? 'N/A');
             $prompt = "Parse the following exam content and extract the specified fields. Provide the output strictly in JSON format with keys: 'examName', 'examiner', 'subject', 'class', 'term', 'year', 'curriculum', 'type', 'answers'. If a field cannot be determined, use null or an empty string for its value.\n\nExam Content:\n```\n" . substr($contentForPrompt, 0, 15000) . "\n```\n\nJSON Output:";
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type' => 'application/json',
-            ])->timeout(120) // Increase timeout for potentially long AI responses
-              ->post('https://api.deepseek.com/v1/chat/completions', [ // Replace with actual endpoint
-                'model' => 'deepseek-chat', // Replace with actual model
+            ])->timeout(120)
+              ->post('https://api.deepseek.com/v1/chat/completions', [
+                'model' => 'deepseek-chat',
                 'messages' => [
                     ['role' => 'system', 'content' => 'You are an assistant that parses exam documents and returns structured data in JSON format.'],
                     ['role' => 'user', 'content' => $prompt]
@@ -173,9 +152,9 @@ class ProcessExamFile implements ShouldQueue
                 return;
             }
 
-            // 3. Save Data to Database (Moved from Controller)
-            Exam::create([ // Using mass assignment now
-                'examName' => $parsedData['examName'] ?? $this->originalName, // Use original name as fallback
+            // 3. Save Data to Database 
+            Exam::create([
+                'examName' => $parsedData['examName'] ?? $this->originalName, 
                 'examiner' => $parsedData['examiner'] ?? null,
                 'subject' => $parsedData['subject'] ?? null,
                 'class' => $parsedData['class'] ?? null,
@@ -183,41 +162,30 @@ class ProcessExamFile implements ShouldQueue
                 'year' => $parsedData['year'] ?? null,
                 'curriculum' => $parsedData['curriculum'] ?? null,
                 'type' => $parsedData['type'] ?? null,
-                // Store answers as JSON string or use casting on the model
-                'answers' => $parsedData['answers'] ?? null, // Assumes model casts to array/json
-                'image' => $this->imagePublicPath, // Use the stored public image path
-                // Add original filename if you have a column for it
-                // 'original_filename' => $this->originalName,
+                'answers' => $parsedData['answers'] ?? null, 
+                'image' => $this->imagePublicPath, 
             ]);
 
             Log::info("Successfully processed and saved data for: {$this->originalName}");
-
-            // 4. Cleanup: Delete the temporary file from storage/app after processing
-            // Keep the public image file in storage/app/public though!
-             if (!$this->imagePublicPath) { // Only delete if it wasn't an image stored in public
+             if (!$this->imagePublicPath) { 
                  Storage::delete($this->filePath);
                  Log::info("Deleted temporary file: {$this->filePath}");
              }
 
 
-        } catch (Throwable $e) { // Catch Throwable for broader error coverage
+        } catch (Throwable $e) { 
             Log::error("Job failed for {$this->originalName}: " . $e->getMessage() . "\n" . $e->getTraceAsString());
-            // Fail the job so Laravel can retry it based on your queue config
             $this->fail($e);
         }
     }
 
      /**
-      * Placeholder for OCR implementation.
-      * Requires an OCR library like Tesseract.
-      *
-      * @param string $imagePath Full path to the image file in storage.
-      * @return string|null Extracted text or null on failure.
+      * OCR LIbrary for character recognintion
+      * @param string $path to the image file in storage.
+      * @return string|null 
       */
      protected function performOcr(string $imagePath): ?string
-     {
-         // Example using a hypothetical Tesseract wrapper
-         /*
+     {         
          try {
              $tesseract = new TesseractOCR($imagePath);
              return $tesseract->run();
@@ -225,31 +193,19 @@ class ProcessExamFile implements ShouldQueue
              Log::error("OCR Failed for $imagePath: " . $e->getMessage());
              return null;
          }
-         */
          Log::warning("OCR processing attempted for $imagePath, but no OCR library is implemented.");
-         return null; // Return null as OCR isn't implemented here
+         return null;
      }
 
     /**
-     * Handle a job failure.
+     * job failure.
      *
-     * @param  \Throwable  $exception
+     * @param  \Throwable
      * @return void
      */
     public function failed(Throwable $exception): void
     {
-        // Send notification, log failure, etc.
         Log::critical("Job ProcessExamFile FAILED for file {$this->originalName}. Error: {$exception->getMessage()}");
 
-        // Optionally: Clean up the originally uploaded file if the job fails permanently
-        // Be careful with this logic, depends on your retry strategy.
-        // if (Storage::exists($this->filePath)) {
-        //     Storage::delete($this->filePath);
-        //     Log::info("Deleted file {$this->filePath} after job failure.");
-        // }
-        // if ($this->imagePublicPath && Storage::disk('public')->exists($this->imagePublicPath)) {
-        //     Storage::disk('public')->delete($this->imagePublicPath);
-        //     Log::info("Deleted public image {$this->imagePublicPath} after job failure.");
-        // }
     }
 }

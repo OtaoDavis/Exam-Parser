@@ -16,3 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('parser');
 });
+
+Route::get('/upload', [ParsingController::class, 'create'])->name('exams.upload');
+Route::get('/store', [ParsingController::class, 'store'])->name('exams.store');
+

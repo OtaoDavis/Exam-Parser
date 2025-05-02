@@ -11,8 +11,7 @@ use Exception;
 
 class ParsingController extends Controller
 {
-    public function create()
-    {
+    public function create(){
         return view('parser');
     }
 
