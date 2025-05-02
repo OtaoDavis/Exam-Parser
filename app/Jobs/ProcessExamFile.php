@@ -118,8 +118,8 @@ class ProcessExamFile implements ShouldQueue
              
              $contentForPrompt = $extractedText ?? 'N/A - Image file provided. Public path: ' . ($this->imagePublicPath ?? 'N/A');
              $prompt = "Read the first page of the paper and Parse the following paper content and extract the specified fields. Provide the output strictly in JSON format with keys: 'examName', 'examiner', 'subject', 'class', 'term', 'year', 'curriculum', 'type', 'answers', 'image'. If a field cannot be determined, use null or an empty string for its value. USe the details below for your reference in making the assessment 
-            For exam name use the title of the file uploaded
-            For examiner field data, its either Kenya National Examinations Council(KNEC)(usualy labelled)   set that if not set a default value as examiner if not found.
+            For exam name use the title of the paper
+            For examiner field data, look fo the text Kenya National Examinations Council and return KNEC else set that if not set a default value as examiner if not found.
             For subject data, look for the subjects you know(i.e Biology, mathematics, Kiswahili ENglish(the usual in the kenyan curriculum) and if you find any specified on the paper assign a value
             For class data, its either grade followed by a number(i.e grade 3) or class followed by a number as well i.e (class 3, or form 2 (these are for 844)) If not found that is a Form 4 examination. 
             For Year data, the format is given as Month and Year extract the year from there. Usually four number i.r 2024,2015, 2002 
