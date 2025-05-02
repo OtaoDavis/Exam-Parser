@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ParsingController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -18,5 +20,5 @@ Route::get('/', function () {
 });
 
 Route::get('/upload', [ParsingController::class, 'create'])->name('exams.upload');
-Route::get('/store', [ParsingController::class, 'store'])->name('exams.store');
+Route::post('/store', [ParsingController::class, 'store'])->name('exams.store');
 

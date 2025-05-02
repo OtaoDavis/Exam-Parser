@@ -58,7 +58,7 @@ class ParsingController extends Controller
 
             ProcessExamFile::dispatch($storedPath, $originalName, $extension, $imagePublicPath);
             return redirect()->route('exams.upload')
-                ->with('success', 'File uploaded successfully! It is now being processed in the background. You will be notified upon completion (feature to be added).'); // Added a note about notification
+                ->with('success', 'File uploaded successfully! It is now being processed in the background.'); 
 
         } catch (Exception $e) {
             Log::error("File upload or job dispatch failed for '{$safeOriginalName}': " . $e->getMessage(), [
