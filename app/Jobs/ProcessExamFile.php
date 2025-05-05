@@ -78,7 +78,7 @@ class ProcessExamFile implements ShouldQueue
             $apiKey = env('GEMINI_API_KEY');
             if (!$apiKey) { Log::error('Gemini API key missing'); $this->fail('Gemini API key missing'); return; }
 
-            $prompt = "Analyze the following exam paper content. First, extract metadata (examName, examiner, subject, class, term, year, curriculum, type).For examiner, its usually the first description in bold at the top of the paper.
+            $prompt = "Analyze the following exam paper content. First, extract metadata (examName, examiner, subject, class, term, year, curriculum, type).For examiner, its usually the first description in bold at the top of the paper.For curriculum data, CBC papers are labelled CBC if not labelled cbc its 844. 
             Second, *answer all questions*. Provide output strictly in JSON format (double quotes) with keys: 'examName', 'examiner', 'subject', 'class', 'term', 'year', 'curriculum', 'type', 'generatedAnswers'. Use null if metadata not found. 'generatedAnswers' should be a single string with formatted answers.\n\nExam Content:\n```\n" . substr($extractedText, 0, 25000) . "\n```\n\nJSON Output:";
 
             $response = Http::withHeaders(['Content-Type'=>'application/json','Accept'=>'application/json'])
