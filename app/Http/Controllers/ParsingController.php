@@ -8,11 +8,17 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use App\Jobs\ProcessExamFile; 
 use Exception; 
+use App\Models\Exam;
 
 class ParsingController extends Controller
 {
-    public function create(){
-        return view('parser');
+    public function create()
+    {
+        // Fetch processed exams, ordered by latest first
+        $exams = Exam::latest()->paginate(15);
+        $answersDirectory = 'exam_answers'; 
+
+        return view('parser', compact('exams', 'answersDirectory'));
     }
 
     public function store(Request $request){
