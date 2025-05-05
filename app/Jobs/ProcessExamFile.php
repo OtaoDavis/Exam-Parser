@@ -83,7 +83,7 @@ class ProcessExamFile implements ShouldQueue
 
             $response = Http::withHeaders(['Content-Type'=>'application/json','Accept'=>'application/json'])
                 ->timeout(180)
-                ->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey, [ // Using 1.5 flash
+                ->post('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' . $apiKey, [ 
                     'contents' => [['parts' => [['text' => $prompt]]]],
                     'generationConfig' => ['responseMimeType' => 'application/json']
                 ]);
