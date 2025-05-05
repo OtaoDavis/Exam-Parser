@@ -14,7 +14,6 @@ class ParsingController extends Controller
 {
     public function create()
     {
-        // Fetch processed exams, ordered by latest first
         $exams = Exam::latest()->paginate(15);
         $answersDirectory = 'exam_answers'; 
 

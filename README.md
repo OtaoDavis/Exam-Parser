@@ -106,8 +106,6 @@ This project allows users to upload exam documents (PDF, DOCX) or images (JPG, P
 5.  **Display:** The `ParsingController@create` method fetches processed exams from the database and displays them in the view (`parser.blade.php`). If an exam record has an answers filename, a download link pointing to the public URL of the answers file is generated.
 
 ## Important Notes
-
-* **OCR for Images:** Text extraction from images (OCR) is **not implemented** in the provided code (`performOcr` method is a placeholder). To process images fully, you need to install and configure an OCR library like Tesseract and integrate it into the `performOcr` method within the `ProcessExamFile` job. Without OCR, jobs for image files will fail during the answer generation step as there's no text to send to the AI.
 * **API Costs:** Be mindful of the costs associated with using the Google Gemini API, especially with large documents or frequent use.
 * **Error Handling:** The job includes basic error handling and logging. Check `storage/logs/laravel.log` for details on processing errors or API issues. Failed jobs will be logged in the `failed_jobs` table if using the database queue driver.
 * **Queue Monitoring:** In production, monitor your queue worker and the `failed_jobs` table.
