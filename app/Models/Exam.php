@@ -20,8 +20,11 @@ class Exam extends Model
         'year',
         'curriculum',
         'type',
-        'answers',
-        'image',
+        'processing_time',
     ];
+
+    public function questions(){
+    return $this->hasMany(ExamQuestionAnswer::class);
+}
 
 }
